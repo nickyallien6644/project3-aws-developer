@@ -7,22 +7,32 @@ services:
   - docker
 
 env:
+  # Global variable
   global:
     - UDAGRAM_API_FEED_IMAGE_NAME=udagram-api-feed
     - UDAGRAM_API_USER_IMAGE_NAME=udagram-api-user
     - UDAGRAM_FRONTEND_IMAGE_NAME=udagram-frontend
     - UDAGRAM_REVERSEPROXY_IMAGE_NAME=reverseproxy
-    - TAG=v2  # Update Tag when deploy new version
+    - TAG=v1  # Update Tag when deploy new version
+
+before_script:
+  # Check version
+  - docker --version
+  - docker-compose --version
+  # Assuming DOCKER_PASSWORD and DOCKER_USERNAME are set in the Travis repository settings
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 script:
+  # Docker-compose build
   - docker-compose -f ./docker-compose-build.yaml build --parallel
+  # Tagging
   - docker tag $UDAGRAM_API_FEED_IMAGE_NAME $DOCKER_USERNAME/$UDAGRAM_API_FEED_IMAGE_NAME:$TAG
   - docker tag $UDAGRAM_API_USER_IMAGE_NAME $DOCKER_USERNAME/$UDAGRAM_API_USER_IMAGE_NAME:$TAG
   - docker tag $UDAGRAM_FRONTEND_IMAGE_NAME $DOCKER_USERNAME/$UDAGRAM_FRONTEND_IMAGE_NAME:$TAG
   - docker tag $UDAGRAM_REVERSEPROXY_IMAGE_NAME $DOCKER_USERNAME/$UDAGRAM_REVERSEPROXY_IMAGE_NAME:$TAG
 
-after_success:
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+after_script:
+  # Push to repo
   - docker push $DOCKER_USERNAME/$UDAGRAM_API_FEED_IMAGE_NAME:$TAG
   - docker push $DOCKER_USERNAME/$UDAGRAM_API_USER_IMAGE_NAME:$TAG
   - docker push $DOCKER_USERNAME/$UDAGRAM_FRONTEND_IMAGE_NAME:$TAG
